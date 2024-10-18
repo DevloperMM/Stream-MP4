@@ -1,0 +1,12 @@
+{
+  "name": "js-backend",
+  "version": "1.0.0",
+  "description": "This is a professional backend project",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon src/index.js"
+  },
+  "author": "Mangal Murti",
+  "license": "ISC"
+}
