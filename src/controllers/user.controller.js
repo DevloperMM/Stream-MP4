@@ -1,7 +1,10 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.models.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import {
+  uploadOnCloudinary,
+  destroyFromCloudinary,
+} from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 
@@ -277,62 +280,70 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
 });
 
 const updateAvatar = asyncHandler(async (req, res) => {
-  // check for req object and find "file" and "files"
-  // console.log(req)
-
   const avatarLocalPath = req.file?.path;
 
   if (!avatarLocalPath) {
     throw new ApiError(400, "Avatar file is missing");
   }
 
-  const avatar = await uploadOnCloudinary(avatarLocalPath);
+  try {
+    const avatar = await uploadOnCloudinary(avatarLocalPath);
 
-  if (!avatar.url) {
-    throw new ApiError(400, "Error while uploading avatar");
+    if (!avatar.url) {
+      throw new ApiError(400, "Error while uploading avatar");
+    }
+
+    let user = await User.findById(req.user._id);
+
+    await destroyFromCloudinary(req.user.avatar);
+
+    user.avatar = avatar.url;
+    user = await user.save({ validateBeforeSave: false }).select("-password");
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, user, "Avatar Updated Successfully"));
+  } catch (err) {
+    throw new ApiError(
+      400,
+      err?.message || "Some error occured while changing avatar"
+    );
   }
-
-  const user = await User.findByIdAndUpdate(
-    req.user?._id,
-    {
-      $set: {
-        avatar: avatar.url,
-      },
-    },
-    { new: true }
-  ).select("-password");
-
-  return res
-    .status(200)
-    .json(new ApiResponse(200, user, "Avatar Updated Successfully"));
 });
 
 const updateCoverImg = asyncHandler(async (req, res) => {
   const coverImgLocalPath = req.file?.path;
 
   if (!coverImgLocalPath) {
-    throw new ApiError(400, "Cover Image is mandatory while updating");
+    throw new ApiError(
+      400,
+      "Uploading cover Image is mandatory while updating"
+    );
   }
 
-  const coverImg = await uploadOnCloudinary(coverImgLocalPath);
+  try {
+    const coverImg = await uploadOnCloudinary(coverImgLocalPath);
 
-  if (!coverImg.url) {
-    throw new ApiError(400, "Error while uploading cover image");
+    if (!coverImg.url) {
+      throw new ApiError(400, "Error while uploading cover image");
+    }
+
+    let user = await User.findById(req.user._id);
+
+    await destroyFromCloudinary(req.user.coverImg);
+
+    user.coverImg = coverImg.url;
+    user = await user.save({ validateBeforeSave: false }).select("-password");
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, user, "Cover Image Updated Successfully"));
+  } catch (err) {
+    throw new ApiError(
+      "400",
+      err?.message || "Some error occured while changing cover photo"
+    );
   }
-
-  const user = await User.findByIdAndUpdate(
-    req.user?._id,
-    {
-      $set: {
-        coverImg: coverImg.url,
-      },
-    },
-    { new: true }
-  ).select("-password");
-
-  return res
-    .status(200)
-    .json(new ApiResponse(200, user, "Cover Image Updated Successfully"));
 });
 
 export {
