@@ -1,8 +1,8 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
-import { apiError } from "../utils/apiError.js";
+import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.models.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
-import { apiResponse } from "../utils/apiResponse.js";
+import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 
 const options = {
@@ -21,7 +21,7 @@ const generateTokens = async (userId) => {
 
     return { accessToken, refreshToken };
   } catch (err) {
-    throw new apiError(500, "Error occured in generating tokens");
+    throw new ApiError(500, "Error occured in generating tokens");
   }
 };
 
@@ -44,7 +44,7 @@ const registerUser = asyncHandler(async (req, res) => {
   if (
     [fullName, email, username, password].some((field) => field?.trim() === "")
   ) {
-    throw new apiError(400, "All fields are required");
+    throw new ApiError(400, "All fields are required");
   }
 
   const isExist = await User.findOne({
@@ -52,7 +52,7 @@ const registerUser = asyncHandler(async (req, res) => {
   });
 
   if (isExist)
-    throw new apiError(409, "User with this email or username already exist");
+    throw new ApiError(409, "User with this email or username already exist");
 
   // console.log(req.files)
 
@@ -67,7 +67,7 @@ const registerUser = asyncHandler(async (req, res) => {
   ) {
     avatarLocalPath = req.files.avatar[0].path;
   } else {
-    throw new apiError(400, "Upload Avatar is necessary");
+    throw new ApiError(400, "Upload Avatar is necessary");
   }
 
   let coverImgLocalPath;
@@ -84,7 +84,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
   // console.log(avatar);
   if (!avatar) {
-    throw new apiError(400, "Upload Avatar is necessary");
+    throw new ApiError(400, "Upload Avatar is necessary");
   }
 
   const user = await User.create({
@@ -101,12 +101,12 @@ const registerUser = asyncHandler(async (req, res) => {
   );
 
   if (!isUser) {
-    throw new apiError(500, "Error occured while registering the user");
+    throw new ApiError(500, "Error occured while registering the user");
   }
 
   return res
     .status(201)
-    .json(new apiResponse(200, isUser, "User Registered Successfully"));
+    .json(new ApiResponse(200, isUser, "User Registered Successfully"));
 });
 
 const loginUser = asyncHandler(async (req, res) => {
@@ -120,7 +120,7 @@ const loginUser = asyncHandler(async (req, res) => {
   const { email, username, password } = req.body;
 
   if (!username && !email) {
-    throw new apiError(400, "Username/Email is required field");
+    throw new ApiError(400, "Username/Email is required field");
   }
 
   const user = await User.findOne({
@@ -128,13 +128,13 @@ const loginUser = asyncHandler(async (req, res) => {
   });
 
   if (!user) {
-    throw new apiError(404, "User does not exit");
+    throw new ApiError(404, "User does not exit");
   }
 
   const isPassValid = await user.isPasswordCorrect(password);
 
   if (!isPassValid) {
-    throw new apiError(404, "Invalid user credentials");
+    throw new ApiError(404, "Invalid user credentials");
   }
 
   const { accessToken, refreshToken } = await generateTokens(user._id);
@@ -148,7 +148,7 @@ const loginUser = asyncHandler(async (req, res) => {
     .cookie("accessToken", accessToken, options)
     .cookie("refreshToken", refreshToken, options)
     .json(
-      new apiResponse(
+      new ApiResponse(
         200,
         {
           user: loggedInUser,
@@ -177,7 +177,7 @@ const logoutUser = asyncHandler(async (req, res) => {
     .status(200)
     .clearCookie("accessToken", options)
     .clearCookie("refreshToken", options)
-    .json(new apiResponse(200, {}, "User logged out successfully"));
+    .json(new ApiResponse(200, {}, "User logged out successfully"));
 });
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
@@ -185,7 +185,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     req.cookies.refreshToken || req.body.refreshToken;
 
   if (!incomingRefreshToken) {
-    throw new apiError(401, "Unauthorized request");
+    throw new ApiError(401, "Unauthorized request");
   }
 
   try {
@@ -197,11 +197,11 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     const user = await User.findById(decodedToken?._id);
 
     if (!user) {
-      throw new apiError(401, "Invalid Refresh Token");
+      throw new ApiError(401, "Invalid Refresh Token");
     }
 
     if (incomingRefreshToken !== user?.refreshToken) {
-      throw new apiError(401, "Refresh token is expired");
+      throw new ApiError(401, "Refresh token is expired");
     }
 
     const { accessToken, newRefreshToken } = await generateTokens(user._id);
@@ -211,15 +211,138 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
       .cookie("accessToken", accessToken, options)
       .cookie("refreshToken", newRefreshToken, options)
       .json(
-        new apiResponse(
+        new ApiResponse(
           200,
           { accessToken, refreshToken: newRefreshToken },
           "Access Token Refreshed"
         )
       );
   } catch (err) {
-    throw new apiError(401, err?.message || "Invalid Refresh Token");
+    throw new ApiError(401, err?.message || "Invalid Refresh Token");
   }
 });
 
-export { registerUser, loginUser, logoutUser, refreshAccessToken };
+const changeCurrPassword = asyncHandler(async (req, res) => {
+  const { oldPass, newPass } = req.body;
+
+  // const {confirmPass} = req.body;
+  // if (newPass !== confirmPass) {
+  //   throw new ApiError(400, "New and Confirm Password must be same");
+  // }
+
+  const user = await User.findById(req.user?._id);
+  const isPassValid = await user.isPasswordCorrect(oldPass);
+
+  if (!isPassValid) {
+    throw new ApiError(400, "Invalid current password");
+  }
+
+  user.password = newPass;
+  await user.save({ validateBeforeSave: false });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Password Changed Successfully"));
+});
+
+const getCurrentUser = asyncHandler((req, res) => {
+  return res
+    .status(200)
+    .json(new ApiResponse(200, req.user, "User Fetched Successfully"));
+});
+
+const updateAccountDetails = asyncHandler(async (req, res) => {
+  const { newFullName, newEmail } = req.body;
+
+  if (!fullName || !email) {
+    throw new ApiError(400, "All fields are required");
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        fullName: newFullName,
+        email: newEmail,
+      },
+    },
+    { new: true }
+  ).select("-password");
+
+  // console.log(user) -> test it once
+
+  return res
+    .status(200)
+    .json(new ApiResponse(), user, "Account details updated successfully");
+});
+
+const updateAvatar = asyncHandler(async (req, res) => {
+  // check for req object and find "file" and "files"
+  // console.log(req)
+
+  const avatarLocalPath = req.file?.path;
+
+  if (!avatarLocalPath) {
+    throw new ApiError(400, "Avatar file is missing");
+  }
+
+  const avatar = await uploadOnCloudinary(avatarLocalPath);
+
+  if (!avatar.url) {
+    throw new ApiError(400, "Error while uploading avatar");
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        avatar: avatar.url,
+      },
+    },
+    { new: true }
+  ).select("-password");
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "Avatar Updated Successfully"));
+});
+
+const updateCoverImg = asyncHandler(async (req, res) => {
+  const coverImgLocalPath = req.file?.path;
+
+  if (!coverImgLocalPath) {
+    throw new ApiError(400, "Cover Image is mandatory while updating");
+  }
+
+  const coverImg = await uploadOnCloudinary(coverImgLocalPath);
+
+  if (!coverImg.url) {
+    throw new ApiError(400, "Error while uploading cover image");
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        coverImg: coverImg.url,
+      },
+    },
+    { new: true }
+  ).select("-password");
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "Cover Image Updated Successfully"));
+});
+
+export {
+  registerUser,
+  loginUser,
+  logoutUser,
+  refreshAccessToken,
+  changeCurrPassword,
+  getCurrentUser,
+  updateAccountDetails,
+  updateAvatar,
+  updateCoverImg,
+};
