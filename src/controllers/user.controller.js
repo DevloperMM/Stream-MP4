@@ -43,8 +43,6 @@ const registerUser = asyncHandler(async (req, res) => {
 
   const { fullName, email, username, password } = req.body;
 
-  // console.log(req.body);
-
   if (
     [fullName, email, username, password].some((field) => field?.trim() === "")
   ) {
@@ -57,8 +55,6 @@ const registerUser = asyncHandler(async (req, res) => {
 
   if (isExist)
     throw new ApiError(409, "User with this email or username already exist");
-
-  // console.log(req.files)
 
   // const avatarLocalPath = req.files?.avatar[0]?.path;
   // const coverImgLocalPath = req.files?.coverImg[0]?.path;
@@ -86,7 +82,6 @@ const registerUser = asyncHandler(async (req, res) => {
   const avatar = await uploadOnCloudinary(avatarLocalPath);
   const coverImg = await uploadOnCloudinary(coverImgLocalPath);
 
-  // console.log(avatar);
   if (!avatar) {
     throw new ApiError(400, "Upload Avatar is necessary");
   }
@@ -154,22 +149,18 @@ const loginUser = asyncHandler(async (req, res) => {
     .json(
       new ApiResponse(
         200,
-        {
-          user: loggedInUser,
-          accessToken,
-          refreshToken,
-        },
+        { user: loggedInUser },
         "User logged in successfully"
       )
     );
 });
 
 const logoutUser = asyncHandler(async (req, res) => {
-  await User.findByIdAndUpdate(
+  const user = await User.findByIdAndUpdate(
     req.user._id,
     {
-      $set: {
-        refresh_token: undefined,
+      $unset: {
+        refresh_token: 1,
       },
     },
     {
@@ -181,7 +172,7 @@ const logoutUser = asyncHandler(async (req, res) => {
     .status(200)
     .clearCookie("accessToken", options)
     .clearCookie("refreshToken", options)
-    .json(new ApiResponse(200, {}, "User logged out successfully"));
+    .json(new ApiResponse(200, { user }, "User logged out successfully"));
 });
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
@@ -258,7 +249,7 @@ const getCurrentUser = asyncHandler((req, res) => {
 const updateAccountDetails = asyncHandler(async (req, res) => {
   const { newFullName, newEmail } = req.body;
 
-  if (!fullName || !email) {
+  if (!newFullName || !newEmail) {
     throw new ApiError(400, "All fields are required");
   }
 
@@ -271,13 +262,11 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
       },
     },
     { new: true }
-  ).select("-password");
-
-  // console.log(user) -> test it once
+  ).select("-password -refreshToken");
 
   return res
     .status(200)
-    .json(new ApiResponse(), user, "Account details updated successfully");
+    .json(new ApiResponse(200, user, "Account details updated successfully"));
 });
 
 const updateAvatar = asyncHandler(async (req, res) => {
@@ -294,12 +283,14 @@ const updateAvatar = asyncHandler(async (req, res) => {
       throw new ApiError(400, "Error while uploading avatar");
     }
 
-    let user = await User.findById(req.user._id);
+    let user = await User.findById(req.user._id).select(
+      "-password -refreshToken"
+    );
 
     await destroyFromCloudinary(req.user.avatar);
 
     user.avatar = avatar.url;
-    user = await user.save({ validateBeforeSave: false }).select("-password");
+    user = await user.save({ validateBeforeSave: false });
 
     return res
       .status(200)
@@ -329,12 +320,16 @@ const updateCoverImg = asyncHandler(async (req, res) => {
       throw new ApiError(400, "Error while uploading cover image");
     }
 
-    let user = await User.findById(req.user._id);
+    let user = await User.findById(req.user._id).select(
+      "-password -refreshToken"
+    );
 
-    await destroyFromCloudinary(req.user.coverImg);
+    if (req.user.coverImg) {
+      await destroyFromCloudinary(req.user.coverImg);
+    }
 
     user.coverImg = coverImg.url;
-    user = await user.save({ validateBeforeSave: false }).select("-password");
+    user = await user.save({ validateBeforeSave: false });
 
     return res
       .status(200)
