@@ -10,9 +10,9 @@ const likeSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "Comment",
     },
-    tweet: {
+    pulse: {
       type: Schema.Types.ObjectId,
-      ref: "Tweet",
+      ref: "Pulse",
     },
     likedBy: {
       type: Schema.Types.ObjectId,

@@ -1,10 +1,11 @@
 import mongoose, { Schema } from "mongoose";
 
-const announcementSchema = new Schema(
+const pulseSchema = new Schema(
   {
     content: {
       type: String,
       required: true,
+      maxLength: 1000,
     },
     owner: {
       type: Schema.Types.ObjectId,
@@ -14,4 +15,4 @@ const announcementSchema = new Schema(
   { timestamps: true }
 );
 
-export const Announcement = mongoose.model("Announcement", announcementSchema);
+export const Pulse = mongoose.model("Pulse", pulseSchema);
