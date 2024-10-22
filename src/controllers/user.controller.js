@@ -1,10 +1,7 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.models.js";
-import {
-  uploadOnCloudinary,
-  destroyFromCloudinary,
-} from "../utils/cloudinary.js";
+import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
@@ -296,13 +293,7 @@ const updateAvatar = asyncHandler(async (req, res) => {
       "-password -refreshToken"
     );
 
-    const arr = user.avatar.split("/");
-    const public_id = arr[arr.length - 1].split(".")[0];
-
-    const status = await destroyFromCloudinary(public_id);
-    if (status?.result !== "ok") {
-      throw new ApiError(500, "Error in removing the avatar");
-    }
+    // No need to destroy, uploading done with same name replacing it
 
     user.avatar = avatar.url;
     user = await user.save({ validateBeforeSave: false });
@@ -342,13 +333,7 @@ const updateCoverImg = asyncHandler(async (req, res) => {
       "-password -refreshToken"
     );
 
-    const arr = user.coverImg.split("/");
-    const public_id = arr[arr.length - 1].split(".")[0];
-
-    const status = await destroyFromCloudinary(public_id);
-    if (status?.result !== "ok") {
-      throw new ApiError(500, "Error in removing the avatar");
-    }
+    // No need to destroy, uploading done with same name replacing it
 
     user.coverImg = coverImg.url;
     user = await user.save({ validateBeforeSave: false });

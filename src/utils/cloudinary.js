@@ -27,8 +27,10 @@ const uploadOnCloudinary = async (localFilePath, cloudImgName) => {
   }
 };
 
-const destroyFromCloudinary = async (publicIdName) => {
-  return cloudinary.uploader.destroy(publicIdName);
+const destroyFromCloudinary = async (url) => {
+  const arr = url.split("/");
+  const public_id = arr[arr.length - 1].split(".")[0];
+  return cloudinary.uploader.destroy(public_id);
 };
 
-export { uploadOnCloudinary, destroyFromCloudinary };
+export { uploadOnCloudinary };
