@@ -79,8 +79,14 @@ const registerUser = asyncHandler(async (req, res) => {
     coverImgLocalPath = req.files.coverImg[0].path;
   }
 
-  const avatar = await uploadOnCloudinary(avatarLocalPath);
-  const coverImg = await uploadOnCloudinary(coverImgLocalPath);
+  const avatar = await uploadOnCloudinary(
+    avatarLocalPath,
+    `${username}_avatar`
+  );
+  const coverImg = await uploadOnCloudinary(
+    coverImgLocalPath,
+    `${username}_cover`
+  );
 
   if (!avatar) {
     throw new ApiError(400, "Upload Avatar is necessary");
@@ -104,7 +110,7 @@ const registerUser = asyncHandler(async (req, res) => {
   }
 
   return res
-    .status(201)
+    .status(200)
     .json(new ApiResponse(200, isUser, "User Registered Successfully"));
 });
 
@@ -277,7 +283,10 @@ const updateAvatar = asyncHandler(async (req, res) => {
   }
 
   try {
-    const avatar = await uploadOnCloudinary(avatarLocalPath);
+    const avatar = await uploadOnCloudinary(
+      avatarLocalPath,
+      `${req.user.username}_avatar`
+    );
 
     if (!avatar.url) {
       throw new ApiError(400, "Error while uploading avatar");
@@ -287,7 +296,13 @@ const updateAvatar = asyncHandler(async (req, res) => {
       "-password -refreshToken"
     );
 
-    await destroyFromCloudinary(req.user.avatar);
+    const arr = user.avatar.split("/");
+    const public_id = arr[arr.length - 1].split(".")[0];
+
+    const status = await destroyFromCloudinary(public_id);
+    if (status?.result !== "ok") {
+      throw new ApiError(500, "Error in removing the avatar");
+    }
 
     user.avatar = avatar.url;
     user = await user.save({ validateBeforeSave: false });
@@ -314,7 +329,10 @@ const updateCoverImg = asyncHandler(async (req, res) => {
   }
 
   try {
-    const coverImg = await uploadOnCloudinary(coverImgLocalPath);
+    const coverImg = await uploadOnCloudinary(
+      coverImgLocalPath,
+      `${req.user.username}_cover`
+    );
 
     if (!coverImg.url) {
       throw new ApiError(400, "Error while uploading cover image");
@@ -324,8 +342,12 @@ const updateCoverImg = asyncHandler(async (req, res) => {
       "-password -refreshToken"
     );
 
-    if (req.user.coverImg) {
-      await destroyFromCloudinary(req.user.coverImg);
+    const arr = user.coverImg.split("/");
+    const public_id = arr[arr.length - 1].split(".")[0];
+
+    const status = await destroyFromCloudinary(public_id);
+    if (status?.result !== "ok") {
+      throw new ApiError(500, "Error in removing the avatar");
     }
 
     user.coverImg = coverImg.url;
