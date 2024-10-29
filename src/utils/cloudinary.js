@@ -7,14 +7,34 @@ cloudinary.config({
   api_secret: process.env.CLOUD_API_SECRET,
 });
 
-const uploadOnCloudinary = async (localFilePath, cloudImgName) => {
+const uploadOnCloudinary = async (
+  localFilePath,
+  cloudName,
+  mediaType,
+  isVideo
+) => {
   try {
     if (!localFilePath) return null;
 
+    let publicName;
+
+    if (mediaType === "a") {
+      publicName = `${process.env.PROJECT}/avatar`;
+    } else if (mediaType === "c") {
+      publicName = `${process.env.PROJECT}/coverImg`;
+    } else if (mediaType === "t") {
+      publicName = `${process.env.PROJECT}/thumbnail`;
+    } else {
+      publicName = `${process.env.PROJECT}/video`;
+    }
+
+    const resourceType = isVideo ? "video" : "auto";
+
     //upload file on cloud
     const response = await cloudinary.uploader.upload(localFilePath, {
-      resource_type: "auto",
-      public_id: cloudImgName,
+      resource_type: resourceType,
+      public_id: cloudName,
+      folder: publicName,
     });
 
     //file uploaded successfully, unlink it

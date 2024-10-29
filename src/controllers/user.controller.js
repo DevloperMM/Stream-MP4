@@ -78,11 +78,15 @@ const registerUser = asyncHandler(async (req, res) => {
 
   const avatar = await uploadOnCloudinary(
     avatarLocalPath,
-    `${username}_avatar`
+    `${username}_avatar`,
+    "a",
+    false
   );
   const coverImg = await uploadOnCloudinary(
     coverImgLocalPath,
-    `${username}_cover`
+    `${username}_cover`,
+    "c",
+    false
   );
 
   if (!avatar) {
@@ -282,7 +286,9 @@ const updateAvatar = asyncHandler(async (req, res) => {
   try {
     const avatar = await uploadOnCloudinary(
       avatarLocalPath,
-      `${req.user.username}_avatar`
+      `${req.user.username}_avatar`,
+      "a",
+      false
     );
 
     if (!avatar.url) {
@@ -322,7 +328,9 @@ const updateCoverImg = asyncHandler(async (req, res) => {
   try {
     const coverImg = await uploadOnCloudinary(
       coverImgLocalPath,
-      `${req.user.username}_cover`
+      `${req.user.username}_cover`,
+      "c",
+      false
     );
 
     if (!coverImg.url) {
