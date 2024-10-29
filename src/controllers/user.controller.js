@@ -202,16 +202,16 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
       throw new ApiError(401, "Refresh token is expired");
     }
 
-    const { accessToken, newRefreshToken } = await generateTokens(user._id);
+    const { accessToken, refreshToken } = await generateTokens(user._id);
 
     return res
       .status(200)
       .cookie("accessToken", accessToken, options)
-      .cookie("refreshToken", newRefreshToken, options)
+      .cookie("refreshToken", refreshToken, options)
       .json(
         new ApiResponse(
           200,
-          { accessToken, refreshToken: newRefreshToken },
+          { accessToken, refreshToken },
           "Access Token Refreshed"
         )
       );
@@ -402,11 +402,10 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         isSubscribed: 1,
         avatar: 1,
         coverImg: 1,
-        email: 1,
       },
     },
   ]);
-  //console.log(channel)
+  // console.log(channel);
 
   if (!channel?.length) {
     throw new ApiError(404, "Channel does not exist");
@@ -422,9 +421,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
 const getWatchHistory = asyncHandler(async (req, res) => {
   const user = await User.aggregate([
     {
-      $match: {
-        _id: new mongoose.Types.ObjectId(req.user._id),
-      },
+      $match: { _id: mongoose.Types.ObjectId(req.user._id) },
     },
     {
       $lookup: {
