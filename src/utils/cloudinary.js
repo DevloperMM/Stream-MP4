@@ -9,9 +9,9 @@ cloudinary.config({
 
 const uploadOnCloudinary = async (
   localFilePath,
-  cloudName,
+  cloudPublicId,
   mediaType,
-  isVideo
+  isVideo = false
 ) => {
   try {
     if (!localFilePath) return null;
@@ -33,7 +33,7 @@ const uploadOnCloudinary = async (
     //upload file on cloud
     const response = await cloudinary.uploader.upload(localFilePath, {
       resource_type: resourceType,
-      public_id: cloudName,
+      public_id: cloudPublicId,
       folder: publicName,
     });
 
@@ -41,16 +41,21 @@ const uploadOnCloudinary = async (
     fs.unlinkSync(localFilePath);
     return response;
   } catch (err) {
-    fs.unlinkSync(localFilePath);
     //removes locally saved temp files as the upload operation got failed
+    fs.unlinkSync(localFilePath);
     return null;
   }
 };
 
-const destroyFromCloudinary = async (url) => {
-  const arr = url.split("/");
-  const public_id = arr[arr.length - 1].split(".")[0];
-  return cloudinary.uploader.destroy(public_id);
+const destroyFromCloudinary = async (url, isVideo = false) => {
+  const idx = url.indexOf(process.env.PROJECT);
+  const public_id = url.slice(idx).split(".")[0];
+
+  if (isVideo) {
+    return cloudinary.uploader.destroy(public_id, { resource_type: "video" });
+  } else {
+    return cloudinary.uploader.destroy(public_id);
+  }
 };
 
-export { uploadOnCloudinary };
+export { uploadOnCloudinary, destroyFromCloudinary };

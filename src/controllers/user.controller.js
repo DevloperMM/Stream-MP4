@@ -29,8 +29,8 @@ const generateTokens = async (userId) => {
 const registerUser = asyncHandler(async (req, res) => {
   // get user details from frontend
   // validation (e.g. Fields should not be empty, etc.)
-  // check if user exist: username || email
-  // proceed to create the user
+  // check if user not exist: username || email
+  // else restrict from registration
   // check for images where avatar is mandatory
   // upload them on cloudinary, uploading avatar is necessary
   // create user object: create entry in DB
@@ -43,7 +43,7 @@ const registerUser = asyncHandler(async (req, res) => {
   if (
     [fullName, email, username, password].some((field) => field?.trim() === "")
   ) {
-    throw new ApiError(400, "All fields are required");
+    throw new ApiError(400, "Marked fields required to register");
   }
 
   const isExist = await User.findOne({
@@ -76,22 +76,17 @@ const registerUser = asyncHandler(async (req, res) => {
     coverImgLocalPath = req.files.coverImg[0].path;
   }
 
-  const avatar = await uploadOnCloudinary(
-    avatarLocalPath,
-    `${username}_avatar`,
-    "a",
-    false
-  );
-  const coverImg = await uploadOnCloudinary(
-    coverImgLocalPath,
-    `${username}_cover`,
-    "c",
-    false
-  );
+  const avatar = await uploadOnCloudinary(avatarLocalPath, `${username}`, "a");
 
   if (!avatar) {
-    throw new ApiError(400, "Upload Avatar is necessary");
+    throw new ApiError(500, "Error while uploading avatar");
   }
+
+  const coverImg = await uploadOnCloudinary(
+    coverImgLocalPath,
+    `${username}`,
+    "c"
+  );
 
   const user = await User.create({
     fullName,
@@ -286,9 +281,8 @@ const updateAvatar = asyncHandler(async (req, res) => {
   try {
     const avatar = await uploadOnCloudinary(
       avatarLocalPath,
-      `${req.user.username}_avatar`,
-      "a",
-      false
+      `${req.user.username}`,
+      "a"
     );
 
     if (!avatar.url) {
@@ -328,9 +322,8 @@ const updateCoverImg = asyncHandler(async (req, res) => {
   try {
     const coverImg = await uploadOnCloudinary(
       coverImgLocalPath,
-      `${req.user.username}_cover`,
-      "c",
-      false
+      `${req.user.username}`,
+      "c"
     );
 
     if (!coverImg.url) {
