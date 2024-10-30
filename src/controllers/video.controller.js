@@ -6,9 +6,66 @@ import {
   uploadOnCloudinary,
 } from "../utils/cloudinary.js";
 import { Video } from "../models/video.models.js";
+import mongoose from "mongoose";
 
 const getAllVideos = asyncHandler(async (req, res) => {
   const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query;
+  // query can be in title or description
+  // sortBy can be through views/duration/createdAt
+  // sortType can be ascending(1)/descending(-1)
+
+  const skip = (page - 1) * limit;
+
+  const result = await Video.aggregate([
+    {
+      $match: {
+        $or: [
+          { title: { $regex: query, options: "i" } },
+          { description: { $regex: query, options: "i" } },
+        ],
+        ...{ owner: new mongoose.Types.ObjectId(req.user._id) },
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "owner",
+        foreignField: "_id",
+        as: "owner",
+        pipeline: [
+          {
+            $project: {
+              username: 1,
+              fullName: 1,
+              avatar: 1,
+            },
+          },
+        ],
+      },
+    },
+    {
+      $addFields: {
+        owner: {
+          $first: "$owner",
+        },
+      },
+    },
+    {
+      $sort: {
+        [sortBy || "createdAt"]: sortType || 1,
+      },
+    },
+    { $skip: skip },
+    { $limit: limit },
+  ]);
+
+  if (!result) {
+    throw new ApiError(500, "Failed to fetch all videos");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, result, "Videos fetched successfully"));
 });
 
 const publishVideo = asyncHandler(async (req, res) => {

@@ -367,6 +367,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         localField: "_id",
         foreignField: "channel",
         as: "subscribers",
+        // It contains documents of subscription model
       },
     },
     {
@@ -422,7 +423,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
 const getWatchHistory = asyncHandler(async (req, res) => {
   const user = await User.aggregate([
     {
-      $match: { _id: mongoose.Types.ObjectId(req.user._id) },
+      $match: { _id: new mongoose.Types.ObjectId(req.user._id) },
     },
     {
       $lookup: {
