@@ -11,7 +11,7 @@ const addComment = asyncHandler(async (req, res) => {
   //find the video in which the comment to be added
   const { content } = req.body;
   if (!content) {
-    throw new ApiError(401, "Content is missing in the comment");
+    throw new ApiError(401, "Comment can't be empty");
   }
 
   const { videoId } = req.params;
@@ -32,7 +32,7 @@ const addComment = asyncHandler(async (req, res) => {
   );
 
   if (!isComment) {
-    throw new ApiError(500, "Error occured while adding your comment");
+    throw new ApiError(500, "Error occured while processing the comment");
   }
 
   return res
@@ -60,16 +60,16 @@ const getVideoComments = asyncHandler(async (req, res) => {
         from: "comments",
         localField: "_id",
         foreignField: "video",
-        as: "page_comments",
+        as: "fetchComments",
       },
     },
-    { $unwind: "$page_comments" },
+    { $unwind: "$fetchComments" },
     { $skip: skip },
     { $limit: limit },
     {
       $project: {
-        "page_comments.content": 1,
-        "page_comments.owner": 1,
+        "fetchComments.content": 1,
+        "fetchComments.owner": 1,
       },
     },
   ]);
@@ -94,24 +94,23 @@ const updateComment = asyncHandler(async (req, res) => {
   const { content } = req.body;
 
   if (!content) {
-    throw new ApiError(401, "Content is missing in the comment");
+    throw new ApiError(401, "Comment can't be empty");
   }
 
   if (comment.owner.toString() !== req.user?._id.toString()) {
-    throw new ApiError(400, "Unauthorized user to edit comment");
+    throw new ApiError(400, "Unauthorized request");
   }
 
   comment.content = content;
-
   const result = await comment.save();
 
   if (!result) {
-    throw new ApiError(500, "Error while updating the comment");
+    throw new ApiError(500, "Error while updating comment");
   }
 
   return res
     .status(200)
-    .json(new ApiResponse(200, result, "Comment Updated Successfully"));
+    .json(new ApiResponse(200, result, "Comment updated successfully"));
 });
 
 const deleteComment = asyncHandler(async (req, res) => {
@@ -123,10 +122,10 @@ const deleteComment = asyncHandler(async (req, res) => {
   }
 
   if (comment.owner.toString() !== req.user._id.toString()) {
-    throw new ApiError(400, "Unauthorised request to delete comment");
+    throw new ApiError(400, "Unauthorised request");
   }
 
-  const result = await Comment.findByIdAndDelete(commentId);
+  const result = await Comment.deleteOne({ _id: commentId });
 
   if (!result) {
     throw new ApiError(500, "Error occured while deletion");
@@ -134,7 +133,7 @@ const deleteComment = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, comment, "Comment deleted successfully"));
+    .json(new ApiResponse(200, result, "Comment deleted successfully"));
 });
 
 export { getVideoComments, addComment, updateComment, deleteComment };
