@@ -9,7 +9,7 @@ import { Video } from "../models/video.models.js";
 import mongoose from "mongoose";
 
 const getAllVideos = asyncHandler(async (req, res) => {
-  const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query;
+  const { page = 1, limit = 10, query, sortBy, sortType } = req.query;
   // query can be in title or description
   // sortBy can be through views/duration/createdAt
   // sortType can be ascending(1)/descending(-1)
@@ -133,20 +133,28 @@ const publishVideo = asyncHandler(async (req, res) => {
 
 const getVideoById = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
-  const video = await Video.findById(videoId);
+
+  const video = await Video.findByIdAndUpdate(
+    videoId,
+    { $inc: { views: 1 } },
+    { new: true }
+  );
+
   if (!video) {
     throw new ApiError(404, "Not Found! Video doesn't exist");
   }
 
-  return res
-    .status(200)
-    .json(
-      new ApiResponse(
-        200,
-        { videoFile: video.videoFile, thumbnail: video.thumbnail },
-        "Video fetched succesfully"
-      )
-    );
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        videoFile: video.videoFile,
+        thumbnail: video.thumbnail,
+        views: video.views,
+      },
+      "Video fetched succesfully"
+    )
+  );
 });
 
 const updateVideo = asyncHandler(async (req, res) => {
