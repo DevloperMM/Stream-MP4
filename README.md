@@ -1,25 +1,26 @@
-# Project
+# ~~Backend Project~~
 
-- Will name project after hosting, just for some uniqueness
+- _The frontend development is planned in the near future_
 
-This repository contains the journey of my backend development which includes the features like that of a YouTube, built with **Node.js** and **MongoDB**. The backend is designed to provide core functionalities similar to YouTube, including user management, video handling, subscriptions, and watch history tracking. The frontend is planned for future development.
+- _Project name will be displayed after hosting_
+
+This repository contains the journey of my backend development which includes the features like that of a YouTube, built with **Node.js** and **MongoDB**. The backend is designed to be functioanl similar to YouTube, including user management, video handling, subscriptions and tracking views and watch history.
 
 ## Features
 
-- **User Authentication**: Register, Log in, and manage user accounts securely using tokens.
-- **Video Management**: Uploading, viewing (based on filters) and deleting with tracking of views on videos.
-- **Subscription System**: Users can subscribe to channels to receive updates.
-- **Querying Database**: Use of aggregation pipelines to fetch data from the database.
-- **Watch History**: Tracks and stores a user’s video watch history.
+- **User Authentication**: Register, Log in and manage user accounts securely using cookies and tokens.
+- **Video Management**: Manages to upload, view (based on filters) and delete videos by the user.
+- **Subscription System**: Users can subscribe to channels of which they likes the videos or posts.
+- **Engagement**: Increases the engagement of user in videos using comments, like/unlike and community posts (pulses).
 - **Handling Errors and Responses**: Robustly handles the Errors and Responses using classes and constructors.
 
 ## Technologies Used
 
 - **Node.js**: Backend runtime environment.
 - **Express.js**: Web framework for building REST APIs.
-- **MongoDB**: Database for storing user, video, and subscription data.
-- **Mongoose**: NoSQL DB for MongoDB used to structure data models.
 - **JWT**: Token-based authentication for user sessions.
+- **MongoDB**: Database for storing different models data like users, videos, subscriptions likes, comments, likes and pulses.s
+- **Mongoose**: NoSQL DB for MongoDB used to structure data models and enable aggregation pipelines.
 
 ## Installation
 
