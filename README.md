@@ -27,9 +27,7 @@ This repository contains the journey of my backend development which includes th
 1. **Clone the repository**:
 
    ```bash
-   git clone "https://github.com/DevloperMM/Core-Dev.git"
-
-   cd Core-Dev
+   git clone "https://github.com/DevloperMM/Stream-MP4.git" ./
    ```
 
 2. **Install Dependencies**:
